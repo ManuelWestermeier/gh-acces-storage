@@ -1,6 +1,7 @@
+import { decrypt } from "../crypto";
 import GitHubData from "../github";
 
-export default function get({ width, height, path }) {
+export default function get({ width, height, path, password }) {
   document.body.className = "frame-body";
 
   // Set dimensions
@@ -32,7 +33,7 @@ export default function get({ width, height, path }) {
     document.body.innerHTML =
       "<h1 class='status success'>Loading... (max 10s)</h1>";
     try {
-      const result = await GitHubData.get(path);
+      const result = await decrypt(await GitHubData.get(path), password);
       document.body.innerHTML = "<h1 class='status success'>Loaded</h1>";
       parent.postMessage({ status: "ok", data: result }, "*");
     } catch (err) {

@@ -17,7 +17,8 @@
 }
 
 .confirm-btn,
-.cancel-btn {
+.cancel-btn,
+.password-input {
   padding: 0.5rem 1rem;
   margin: 0.25rem;
   border: none;
@@ -47,4 +48,27 @@
 
 .status.cancelled {
   color: #f44336;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 2rem;
+}
+
+.confirm-btn {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.error-message {
+  min-height: 1.2em;
+  font-size: 0.9rem;
 }
