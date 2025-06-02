@@ -28,8 +28,9 @@ export default function set({ width, height, path, data }) {
   document.body.appendChild(cancelBtn);
 
   // Event listeners
-  confirmBtn.addEventListener("click", () => {
-    GitHubData.set(path, data);
+  confirmBtn.addEventListener("click", async () => {
+    document.body.innerHTML = "<h1 class='status success'>Loadning... (max 10s)</h1>";
+    await GitHubData.set(path, data);
     document.body.innerHTML = "<h1 class='status success'>Worked</h1>";
     parent.postMessage("ok", "*");
   });
