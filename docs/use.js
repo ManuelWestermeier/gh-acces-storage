@@ -60,12 +60,6 @@
 
       window.addEventListener("message", onMessage);
       document.body.appendChild(iframe);
-
-      // Optional: Timeout falls keine Antwort
-      setTimeout(() => {
-        cleanup();
-        reject(new Error("Timeout waiting for iframe response"));
-      }, 30000);
     });
   }
 
