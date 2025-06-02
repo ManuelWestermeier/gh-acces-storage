@@ -1,22 +1,20 @@
-import { decrypt } from "../crypto";
+// filepath: src/fn/delete.js
 import GitHubData from "../github";
 
-export default async function deleteFile({ width, height, path, password }) {
-  // Decrypt the encrypted path so we can show the real filename
-  const decryptedPath = await decrypt(path, password);
-
+export default async function deleteFile({
+  width,
+  height,
+  plainPath,
+  pathHash,
+  password,
+}) {
   document.body.className = "frame-body";
 
-  // Set dimensions
-  document.body.style.width = width;
-  document.body.style.height = height;
-
-  // Create confirmation message
+  // Show the plaintext path to the user
   const message = document.createElement("p");
-  message.textContent = `Do you want to delete "${decryptedPath}"?`;
+  message.textContent = `Do you want to delete "${plainPath}"?`;
   message.className = "confirm-message";
 
-  // Create buttons
   const confirmBtn = document.createElement("button");
   confirmBtn.textContent = "Yes";
   confirmBtn.className = "confirm-btn";
@@ -25,19 +23,16 @@ export default async function deleteFile({ width, height, path, password }) {
   cancelBtn.textContent = "No";
   cancelBtn.className = "cancel-btn";
 
-  // Append elements
   document.body.innerHTML = "";
   document.body.appendChild(message);
   document.body.appendChild(confirmBtn);
   document.body.appendChild(cancelBtn);
 
-  // Event listeners
   confirmBtn.addEventListener("click", async () => {
     document.body.innerHTML =
       "<h1 class='status success'>Deleting... (max 10s)</h1>";
     try {
-      // Use the encrypted `path` when calling GitHubData.delete
-      await GitHubData.delete(path);
+      await GitHubData.delete(pathHash);
       document.body.innerHTML = "<h1 class='status success'>Deleted</h1>";
       parent.postMessage("ok", "*");
     } catch (err) {
