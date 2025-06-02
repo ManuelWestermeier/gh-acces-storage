@@ -8,11 +8,10 @@
       const url = new URL(urlBase);
       url.searchParams.set("fn", fn);
       url.searchParams.set("p", path);
+
       if (fn === "set" && data !== null) {
         url.searchParams.set("data", data);
       }
-      url.searchParams.set("w", window.innerWidth);
-      url.searchParams.set("h", window.innerHeight);
 
       // iframe erzeugen
       const iframe = document.createElement("iframe");
@@ -23,7 +22,7 @@
       iframe.style.height = "100vh";
       iframe.style.border = "none";
       iframe.style.zIndex = "999999";
-      iframe.src = url.toString();
+      iframe.src = urlBase + "/#" + url.toString().split(urlBase)[1];
 
       // Event-Listener für postMessage
       function onMessage(event) {
