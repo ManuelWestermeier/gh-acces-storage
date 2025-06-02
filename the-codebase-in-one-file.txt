@@ -1,0 +1,630 @@
+
+//filepath: src\crypto.js
+// aes256lib.js
+
+// Helper to convert strings and buffers
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+/**
+ * Double-hashes the password using SHA-256 twice
+ * @param {string} password
+ * @returns {Promise<CryptoKey>} AES-CBC Key
+ */
+async function deriveKey(password) {
+  const firstHash = await crypto.subtle.digest(
+    "SHA-256",
+    textEncoder.encode(password)
+  );
+  const secondHash = await crypto.subtle.digest("SHA-256", firstHash);
+
+  return crypto.subtle.importKey(
+    "raw",
+    secondHash,
+    { name: "AES-CBC" },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+/**
+ * Encrypts a string with AES-256-CBC
+ * @param {string} data - Plaintext
+ * @param {string} password - Password
+ * @returns {Promise<string>} Base64 encoded IV + ciphertext
+ */
+export async function encrypt(data, password) {
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  const key = await deriveKey(password);
+  const encodedData = textEncoder.encode(data);
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-CBC", iv },
+    key,
+    encodedData
+  );
+
+  const combined = new Uint8Array(iv.length + encrypted.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encrypted), iv.length);
+
+  return btoa(String.fromCharCode(...combined));
+}
+
+/**
+ * Decrypts a base64 string encrypted by this library
+ * @param {string} encryptedBase64 - Base64 string (IV + ciphertext)
+ * @param {string} password - Password
+ * @returns {Promise<string>} Decrypted plaintext
+ */
+export async function decrypt(encryptedBase64, password) {
+  const combinedBytes = Uint8Array.from(atob(encryptedBase64), (c) =>
+    c.charCodeAt(0)
+  );
+  const iv = combinedBytes.slice(0, 16);
+  const ciphertext = combinedBytes.slice(16);
+
+  const key = await deriveKey(password);
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-CBC", iv },
+    key,
+    ciphertext
+  );
+
+  return textDecoder.decode(decrypted);
+}
+
+
+//filepath: src\fn\delete.js
+import GitHubData from "../github";
+
+export default function deleteFile({ width, height, path }) {
+  document.body.className = "frame-body";
+
+  // Set dimensions
+  document.body.style.width = width;
+  document.body.style.height = height;
+
+  // Create confirmation message
+  const message = document.createElement("p");
+  message.textContent = `Do you want to delete "${path}"?`;
+  message.className = "confirm-message";
+
+  // Create buttons
+  const confirmBtn = document.createElement("button");
+  confirmBtn.textContent = "Yes";
+  confirmBtn.className = "confirm-btn";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "No";
+  cancelBtn.className = "cancel-btn";
+
+  // Append elements
+  document.body.innerHTML = "";
+  document.body.appendChild(message);
+  document.body.appendChild(confirmBtn);
+  document.body.appendChild(cancelBtn);
+
+  // Event listeners
+  confirmBtn.addEventListener("click", async () => {
+    document.body.innerHTML =
+      "<h1 class='status success'>Deleting... (max 10s)</h1>";
+    try {
+      await GitHubData.delete(path);
+      document.body.innerHTML = "<h1 class='status success'>Deleted</h1>";
+      parent.postMessage("ok", "*");
+    } catch (err) {
+      document.body.innerHTML = "<h1 class='status cancelled'>Failed</h1>";
+      parent.postMessage({ status: "error", error: err.message }, "*");
+    }
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    document.body.innerHTML = "<h1 class='status cancelled'>Cancelled</h1>";
+    parent.postMessage("false", "*");
+  });
+}
+
+
+//filepath: src\fn\get.js
+import { decrypt } from "../crypto";
+import GitHubData from "../github";
+
+export default function get({ width, height, path, password }) {
+  document.body.className = "frame-body";
+
+  // Set dimensions
+  document.body.style.width = width;
+  document.body.style.height = height;
+
+  // Create message element
+  const message = document.createElement("p");
+  message.textContent = `Do you want to read from "${path}"?`;
+  message.className = "confirm-message";
+
+  // Create buttons
+  const confirmBtn = document.createElement("button");
+  confirmBtn.textContent = "Yes";
+  confirmBtn.className = "confirm-btn";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "No";
+  cancelBtn.className = "cancel-btn";
+
+  // Append elements
+  document.body.innerHTML = "";
+  document.body.appendChild(message);
+  document.body.appendChild(confirmBtn);
+  document.body.appendChild(cancelBtn);
+
+  // Event listeners
+  confirmBtn.addEventListener("click", async () => {
+    document.body.innerHTML =
+      "<h1 class='status success'>Loading... (max 10s)</h1>";
+    try {
+      const result = await decrypt(await GitHubData.get(path), password);
+      document.body.innerHTML = "<h1 class='status success'>Loaded</h1>";
+      parent.postMessage({ status: "ok", data: result }, "*");
+    } catch (err) {
+      document.body.innerHTML = "<h1 class='status cancelled'>Failed</h1>";
+      parent.postMessage({ status: "error", error: err.message }, "*");
+    }
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    document.body.innerHTML = "<h1 class='status cancelled'>Cancelled</h1>";
+    parent.postMessage("false", "*");
+  });
+}
+
+
+//filepath: src\fn\set.js
+import GitHubData from "../github";
+
+export default function set({ width, height, path, data }) {
+  document.body.className = "frame-body";
+
+  // Set dimensions
+  document.body.style.width = width;
+  document.body.style.height = height;
+
+  // Create confirmation message
+  const message = document.createElement("p");
+  message.textContent = `Do you want to write to "${path}" with this data: "${data}"?`;
+  message.className = "confirm-message";
+
+  // Create buttons
+  const confirmBtn = document.createElement("button");
+  confirmBtn.textContent = "Yes";
+  confirmBtn.className = "confirm-btn";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "No";
+  cancelBtn.className = "cancel-btn";
+
+  // Append elements
+  document.body.innerHTML = "";
+  document.body.appendChild(message);
+  document.body.appendChild(confirmBtn);
+  document.body.appendChild(cancelBtn);
+
+  // Event listeners
+  confirmBtn.addEventListener("click", async () => {
+    document.body.innerHTML = "<h1 class='status success'>Loadning... (max 10s)</h1>";
+    await GitHubData.set(path, data);
+    document.body.innerHTML = "<h1 class='status success'>Worked</h1>";
+    parent.postMessage("ok", "*");
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    document.body.innerHTML = "<h1 class='status cancelled'>Cancelled</h1>";
+    parent.postMessage("false", "*");
+  });
+}
+
+
+//filepath: src\get-password.js
+export default function getPassword() {
+  return new Promise((resolve, reject) => {
+    document.body.className = "frame-body";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+
+    // Clear body
+    document.body.innerHTML = "";
+
+    // Create form
+    const form = document.createElement("form");
+    form.className = "password-form";
+
+    // Label
+    const label = document.createElement("label");
+    label.textContent = "Enter password:";
+    label.className = "confirm-message";
+    label.setAttribute("for", "encryption-password");
+
+    // Password input
+    const input = document.createElement("input");
+    input.type = "password";
+    input.name = "encryption-password";
+    input.id = "encryption-password";
+    input.className = "password-input";
+    input.placeholder = "Password";
+    input.autofocus = true;
+    input.required = true;
+
+    // Submit button
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "submit";
+    submitBtn.textContent = "OK";
+    submitBtn.className = "confirm-btn";
+
+    // Error message container
+    const errorMsg = document.createElement("p");
+    errorMsg.className = "error-message";
+    errorMsg.style.color = "red";
+    errorMsg.style.height = "1.2em";
+    errorMsg.style.margin = "0.5em 0 0 0";
+
+    // Append elements to form
+    form.appendChild(label);
+    form.appendChild(input);
+    form.appendChild(submitBtn);
+    form.appendChild(errorMsg);
+
+    // Append form to body
+    document.body.appendChild(form);
+
+    // SHA-512 hashing function
+    async function sha512(text) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      const hashBuffer = await crypto.subtle.digest("SHA-512", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorMsg.textContent = "";
+
+      const password = input.value;
+      if (!password) {
+        errorMsg.textContent = "Password cannot be empty";
+        return;
+      }
+
+      const hashed = await sha512(password);
+      const storedHash = localStorage.getItem("encryption-password-hash");
+
+      if (!storedHash) {
+        // First time: store hash
+        localStorage.setItem("encryption-password-hash", hashed);
+        document.body.innerHTML = "<h1 class='status success'>Password stored</h1>";
+        parent.postMessage("ok", "*");
+        resolve(password);
+      } else {
+        // Compare hash
+        if (storedHash === hashed) {
+          document.body.innerHTML = "<h1 class='status success'>Password verified</h1>";
+          parent.postMessage("ok", "*");
+          resolve(password);
+        } else {
+          errorMsg.textContent = "Password incorrect, please try again.";
+          input.value = "";
+          input.focus();
+          parent.postMessage("false", "*");
+        }
+      }
+    });
+  });
+}
+
+
+//filepath: src\github.js
+// GitHub API frontend library
+// Usage: await GitHubData.init(token)
+
+const GitHubData = (() => {
+  const repo = "data-data";
+  const branch = "main";
+  const baseUrl = "https://api.github.com";
+  let token = "";
+  let username = "";
+
+  function sha256(str) {
+    return crypto.subtle
+      .digest("SHA-256", new TextEncoder().encode(str))
+      .then((buf) =>
+        Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+      );
+  }
+
+  async function request(method, url, body = null) {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  async function getFile(pathHash) {
+    try {
+      return await request(
+        "GET",
+        `${baseUrl}/repos/${username}/${repo}/contents/${pathHash}?ref=${branch}`
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  async function putFile(pathHash, content) {
+    const existing = await getFile(pathHash);
+    const body = {
+      message: new Date(),
+      content: btoa(content),
+      branch,
+    };
+    if (existing) body.sha = existing.sha;
+    return request(
+      "PUT",
+      `${baseUrl}/repos/${username}/${repo}/contents/${pathHash}`,
+      body
+    );
+  }
+
+  async function deleteFile(pathHash, message) {
+    const existing = await getFile(pathHash);
+    if (!existing) return;
+    const body = {
+      message,
+      sha: existing.sha,
+      branch,
+    };
+    return request(
+      "DELETE",
+      `${baseUrl}/repos/${username}/${repo}/contents/${pathHash}`,
+      body
+    );
+  }
+
+  async function chunkData(data) {
+    const chunks = [];
+    for (let i = 0; i < data.length; i += 100000) {
+      chunks.push(data.slice(i, i + 100000));
+    }
+    return chunks;
+  }
+
+  async function get(path) {
+    const lengthHash = await sha256(`${path}/length.dat`);
+    const lengthFile = await getFile(lengthHash);
+    if (!lengthFile) return null;
+    const length = parseInt(atob(lengthFile.content));
+    let data = "";
+    for (let i = 0; i < length; i++) {
+      const chunkHash = await sha256(`${path}/${i}.dat`);
+      const chunkFile = await getFile(chunkHash);
+      if (!chunkFile) break;
+      data += atob(chunkFile.content);
+    }
+    return data;
+  }
+
+  async function set(path, value) {
+    const chunks = await chunkData(value);
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkHash = await sha256(`${path}/${i}.dat`);
+      await putFile(chunkHash, chunks[i], `Set chunk ${i} for ${path}`);
+    }
+    const lengthHash = await sha256(`${path}/length.dat`);
+    await putFile(lengthHash, String(chunks.length), `Set length for ${path}`);
+  }
+
+  async function del(path) {
+    const lengthHash = await sha256(`${path}/length.dat`);
+    const lengthFile = await getFile(lengthHash);
+    if (!lengthFile) return;
+    const length = parseInt(atob(lengthFile.content));
+    for (let i = 0; i < length; i++) {
+      const chunkHash = await sha256(`${path}/${i}.dat`);
+      await deleteFile(chunkHash, `Delete chunk ${i} of ${path}`);
+    }
+    await deleteFile(lengthHash, `Delete length of ${path}`);
+  }
+
+  async function ensureRepoExists() {
+    try {
+      await request("GET", `${baseUrl}/repos/${username}/${repo}`);
+    } catch {
+      await request("POST", `${baseUrl}/user/repos`, {
+        name: repo,
+        private: true,
+        auto_init: true,
+        default_branch: branch,
+      });
+    }
+  }
+
+  return {
+    async init(authToken) {
+      try {
+        token = authToken;
+        const res = await request("GET", `${baseUrl}/user`);
+        username = res.login;
+        await ensureRepoExists();
+        localStorage.setItem("gh-auth-token", authToken);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
+    get,
+    set,
+    delete: del,
+  };
+})();
+
+export default GitHubData;
+
+
+//filepath: src\init.js
+import { decrypt, encrypt } from "./crypto";
+import deleteFile from "./fn/delete";
+import get from "./fn/get";
+import set from "./fn/set";
+
+import getPassword from "./get-password";
+import GitHubData from "./github";
+import showErrror from "./shwo-error";
+
+export const url = new URL(
+  `https://gh-acces.duckdns.org/${new URL(document.location).hash.replace(
+    "#",
+    ""
+  )}`
+);
+
+export default async function init() {
+  const width = url.searchParams.get("w") || innerWidth;
+  const height = url.searchParams.get("h") || innerHeight;
+
+  const originalPath = url.searchParams.get("p");
+  const originalData = url.searchParams.get("data");
+  const fn = url.searchParams.get("fn");
+
+  if (!fn)
+    return showErrror(
+      "url search param fn (function set/get/delete) have to be setted"
+    );
+
+  if (!originalPath) return showErrror("url search param p (path) have to be setted");
+
+  const password = await getPassword();
+
+  const path = await encrypt(originalPath, password);
+  const data = originalData ? await encrypt(originalData, password) : "";
+
+  while (
+    !(await GitHubData.init(
+      localStorage.getItem("gh-auth-token") ||
+        prompt(
+          "Input github auth token: https://github.com/settings/tokens/new"
+        ),
+      password
+    ))
+  );
+
+  if (fn == "delete") {
+    deleteFile({ width, height, path });
+  } else if (fn == "get") {
+    get({ width, height, path, password });
+  } else if (fn == "set") {
+    if (!data) return showErrror("url search param data have to be setted");
+    set({ width, height, path, data });
+  }
+
+  return true;
+}
+
+
+//filepath: src\main.js
+import init from "./init";
+import "./style.css";
+
+init();
+
+//filepath: src\shwo-error.js
+export default function showErrror(msg) {
+  document.body.style.color = "red";
+  document.body.innerText = msg;
+  console.error(msg);
+  return false;
+}
+
+
+//filepath: src\style.css
+.frame-body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+.confirm-message {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.confirm-btn,
+.cancel-btn,
+.password-input {
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.confirm-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.status {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+}
+
+.status.success {
+  color: #4CAF50;
+}
+
+.status.cancelled {
+  color: #f44336;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 2rem;
+}
+
+.confirm-btn {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.error-message {
+  min-height: 1.2em;
+  font-size: 0.9rem;
+}
