@@ -2,6 +2,7 @@ import { encrypt, decrypt } from "./crypto";
 import deleteFile from "./fn/delete";
 import get from "./fn/get";
 import set from "./fn/set";
+import getGHAuthToken from "./get-gh-auth-token";
 import getPassword from "./get-password";
 import GitHubData from "./github";
 import showError from "./shwo-error";
@@ -47,14 +48,7 @@ export default async function init() {
     : null;
 
   // Keep initializing GitHubData until the token is valid
-  while (
-    !(await GitHubData.init(
-      localStorage.getItem("gh-auth-token") ||
-        prompt(
-          "Input GitHub auth token: https://github.com/settings/tokens/new"
-        )
-    ))
-  ) {
+  while (!(await GitHubData.init(await getGHAuthToken()))) {
     // keep asking if invalid token
   }
 
