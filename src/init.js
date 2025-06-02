@@ -1,7 +1,10 @@
 import showErrror from "./shwo-error";
 
 export const url = new URL(
-  `https://gh-acces.duckdns.org/${new URL(document.location).hash}`
+  `https://gh-acces.duckdns.org/${new URL(document.location).hash.replace(
+    "#",
+    ""
+  )}`
 );
 
 export default function init() {
