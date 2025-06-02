@@ -2,4 +2,4 @@
 
 ## usage
 
-url https://gh-access.duckdns.org
+url https://gh-access.duckdns.org/test.html
