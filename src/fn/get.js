@@ -1,16 +1,19 @@
 import { decrypt } from "../crypto";
 import GitHubData from "../github";
 
-export default function get({ width, height, path, password }) {
+export default async function get({ width, height, path, password }) {
   document.body.className = "frame-body";
 
   // Set dimensions
   document.body.style.width = width;
   document.body.style.height = height;
 
+  // First decrypt the path so the user sees the real filename
+  const decryptedPath = await decrypt(path, password);
+
   // Create message element
   const message = document.createElement("p");
-  message.textContent = `Do you want to read from "${path}"?`;
+  message.textContent = `Do you want to read from "${decryptedPath}"?`;
   message.className = "confirm-message";
 
   // Create buttons
@@ -33,9 +36,19 @@ export default function get({ width, height, path, password }) {
     document.body.innerHTML =
       "<h1 class='status success'>Loading... (max 10s)</h1>";
     try {
-      const result = await decrypt(await GitHubData.get(path), password);
-      document.body.innerHTML = "<h1 class='status success'>Loaded</h1>";
-      parent.postMessage({ status: "ok", data: result }, "*");
+      // Fetch the encrypted blob from GitHub, then decrypt it
+      const encryptedBlob = await GitHubData.get(path);
+      const plaintext = await decrypt(encryptedBlob, password);
+
+      // Replace the entire body with the decrypted contents
+      const pre = document.createElement("pre");
+      pre.textContent = plaintext;
+      pre.className = "decrypted-content";
+
+      document.body.innerHTML = ""; // clear “Loading…”
+      document.body.appendChild(pre);
+
+      parent.postMessage({ status: "ok", data: plaintext }, "*");
     } catch (err) {
       document.body.innerHTML = "<h1 class='status cancelled'>Failed</h1>";
       parent.postMessage({ status: "error", error: err.message }, "*");

@@ -72,3 +72,18 @@
   min-height: 1.2em;
   font-size: 0.9rem;
 }
+
+/* Add at the bottom of src/style.css */
+pre {
+  font-family: monospace, monospace;
+  font-size: 1rem;
+  background-color: #fefefe;
+  border-radius: 4px;
+  padding: 1rem;
+  margin: 1rem;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

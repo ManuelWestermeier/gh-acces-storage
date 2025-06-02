@@ -1,15 +1,20 @@
+import { decrypt } from "../crypto";
 import GitHubData from "../github";
 
-export default function set({ width, height, path, data }) {
+export default async function set({ width, height, path, data, password }) {
   document.body.className = "frame-body";
 
   // Set dimensions
   document.body.style.width = width;
   document.body.style.height = height;
 
+  // Decrypt both path and data so the user sees plaintext
+  const decryptedPath = await decrypt(path, password);
+  const decryptedData = await decrypt(data, password);
+
   // Create confirmation message
   const message = document.createElement("p");
-  message.textContent = `Do you want to write to "${path}" with this data: "${data}"?`;
+  message.textContent = `Do you want to write to "${decryptedPath}" with this data:\n\n${decryptedData}`;
   message.className = "confirm-message";
 
   // Create buttons
@@ -29,10 +34,16 @@ export default function set({ width, height, path, data }) {
 
   // Event listeners
   confirmBtn.addEventListener("click", async () => {
-    document.body.innerHTML = "<h1 class='status success'>Loadning... (max 10s)</h1>";
-    await GitHubData.set(path, data);
-    document.body.innerHTML = "<h1 class='status success'>Worked</h1>";
-    parent.postMessage("ok", "*");
+    document.body.innerHTML = "<h1 class='status success'>Loading... (max 10s)</h1>";
+    try {
+      // Write the encrypted data to GitHub
+      await GitHubData.set(path, data);
+      document.body.innerHTML = "<h1 class='status success'>Worked</h1>";
+      parent.postMessage("ok", "*");
+    } catch (err) {
+      document.body.innerHTML = "<h1 class='status cancelled'>Failed</h1>";
+      parent.postMessage({ status: "error", error: err.message }, "*");
+    }
   });
 
   cancelBtn.addEventListener("click", () => {

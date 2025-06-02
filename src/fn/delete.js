@@ -1,6 +1,10 @@
+import { decrypt } from "../crypto";
 import GitHubData from "../github";
 
-export default function deleteFile({ width, height, path }) {
+export default async function deleteFile({ width, height, path, password }) {
+  // Decrypt the encrypted path so we can show the real filename
+  const decryptedPath = await decrypt(path, password);
+
   document.body.className = "frame-body";
 
   // Set dimensions
@@ -9,7 +13,7 @@ export default function deleteFile({ width, height, path }) {
 
   // Create confirmation message
   const message = document.createElement("p");
-  message.textContent = `Do you want to delete "${path}"?`;
+  message.textContent = `Do you want to delete "${decryptedPath}"?`;
   message.className = "confirm-message";
 
   // Create buttons
@@ -32,6 +36,7 @@ export default function deleteFile({ width, height, path }) {
     document.body.innerHTML =
       "<h1 class='status success'>Deleting... (max 10s)</h1>";
     try {
+      // Use the encrypted `path` when calling GitHubData.delete
       await GitHubData.delete(path);
       document.body.innerHTML = "<h1 class='status success'>Deleted</h1>";
       parent.postMessage("ok", "*");

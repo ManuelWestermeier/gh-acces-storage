@@ -44,13 +44,13 @@ export default async function init() {
     ))
   );
 
-  if (fn == "delete") {
-    deleteFile({ width, height, path });
-  } else if (fn == "get") {
-    get({ width, height, path, password });
-  } else if (fn == "set") {
+  if (fn === "delete") {
+    await deleteFile({ width, height, path, password });
+  } else if (fn === "get") {
+    await get({ width, height, path, password });
+  } else if (fn === "set") {
     if (!data) return showErrror("url search param data have to be setted");
-    set({ width, height, path, data });
+    await set({ width, height, path, data, password });
   }
 
   return true;
