@@ -1,8 +1,44 @@
-# GITHUB ACCESS STORAGE
+# GitHub Access Storage
 
-## usage
+This repository provides a simple way to store, retrieve, and delete text files in a GitHub repository using a JavaScript client (ghStorage). It leverages GitHub's API to handle files programmatically, making it easy to persist user-generated content in a GitHub-backed storage.
 
-preview url https://gh-access.duckdns.org/test.html
+## Preview
+
+You can preview the example by visiting: [https://gh-access.duckdns.org/test.html](https://gh-access.duckdns.org/test.html)
+
+## Prerequisites
+
+- A GitHub repository where you want to store files.
+- A JavaScript file (`use.js`) that provides the `ghStorage` API. This file should be hosted and accessible at `https://gh-access.duckdns.org/use.js` (or your own domain).
+- A valid GitHub personal access token (PAT) with appropriate scopes (e.g., `repo`) configured within `use.js` to authenticate API requests.
+- Basic knowledge of HTML and JavaScript.
+
+## How It Works
+
+- **`ghStorage.set(path, content)`**: Saves a file with the specified `path` and `content` to GitHub Storage. Returns `true` if successful.
+- **`ghStorage.get(path)`**: Retrieves the content of the file at `path`. Returns the file content as a string, or `null` if the file does not exist.
+- **`ghStorage.delete(path)`**: Deletes the file at `path`. Returns `true` if the file was deleted successfully.
+
+> The `path` parameter should be the relative path within the repository, such as `folder/filename.txt`.
+
+## Usage
+
+Below is an example HTML file demonstrating how to:
+
+```html
+<!-- Include the ghStorage client script -->
+<script src="https://gh-access.duckdns.org/use.js"></script>
+```
+
+```js
+const success = await window.ghStorage.set(filePath, text);
+const content = await window.ghStorage.get(filePath);
+const success = await window.ghStorage.delete(filePath);
+```
+
+1. Save user input to a GitHub Storage file.
+2. Load the file content back into the textarea.
+3. Delete the file.
 
 ```html
 <!DOCTYPE html>
@@ -10,19 +46,20 @@ preview url https://gh-access.duckdns.org/test.html
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>test with user input</title>
+    <title>GitHub Storage Example</title>
+    <!-- Include the ghStorage client script -->
     <script src="https://gh-access.duckdns.org/use.js"></script>
   </head>
   <body>
-    <h1>Store text file with ghStorage</h1>
+    <h1>Store Text File with ghStorage</h1>
 
     <textarea
       id="userInput"
       rows="8"
       cols="50"
       placeholder="Type your text here..."
-    ></textarea
-    ><br />
+    ></textarea>
+    <br />
 
     <button id="saveBtn">Save to GitHub Storage</button>
     <button id="loadBtn">Load from GitHub Storage</button>
@@ -34,6 +71,7 @@ preview url https://gh-access.duckdns.org/test.html
     ></pre>
 
     <script>
+      // Specify the file path within your GitHub repository
       const filePath = "my/userInput.txt";
 
       const userInput = document.getElementById("userInput");
@@ -42,11 +80,8 @@ preview url https://gh-access.duckdns.org/test.html
       document.getElementById("saveBtn").addEventListener("click", async () => {
         try {
           const text = userInput.value;
-
-          // Optional: encode text to base64 (depends on your API requirements)
-          // For example, if ghStorage expects base64 encoded strings, encode:
+          // If ghStorage expects base64 encoding, uncomment below:
           // const encoded = btoa(unescape(encodeURIComponent(text)));
-          // Here I just send plain text, assuming ghStorage accepts it.
 
           const success = await window.ghStorage.set(filePath, text);
           output.textContent = success
