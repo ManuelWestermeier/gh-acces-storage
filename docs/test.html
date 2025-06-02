@@ -3,28 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>test with user input</title>
+    <title>Text File Storage with ghStorage</title>
     <script src="https://gh-access.duckdns.org/use.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f9f9fb;
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: start;
+        min-height: 100vh;
+        padding: 2rem;
+      }
+
+      .container {
+        background: white;
+        max-width: 600px;
+        width: 100%;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      textarea {
+        width: 100%;
+        height: 150px;
+        padding: 0.75rem;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        resize: vertical;
+        margin-bottom: 1rem;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      button {
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #3730a3;
+      }
+
+      pre {
+        background: #f0f0f0;
+        padding: 1rem;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 0.95rem;
+      }
+    </style>
   </head>
   <body>
-    <h1>Store text file with ghStorage</h1>
+    <div class="container">
+      <h1>Store Text File with ghStorage</h1>
 
-    <textarea
-      id="userInput"
-      rows="8"
-      cols="50"
-      placeholder="Type your text here..."
-    ></textarea
-    ><br />
+      <textarea id="userInput" placeholder="Type your text here..."></textarea>
 
-    <button id="saveBtn">Save to GitHub Storage</button>
-    <button id="loadBtn">Load from GitHub Storage</button>
-    <button id="deleteBtn">Delete from GitHub Storage</button>
+      <div class="buttons">
+        <button id="saveBtn">💾 Save</button>
+        <button id="loadBtn">📂 Load</button>
+        <button id="deleteBtn">🗑️ Delete</button>
+      </div>
 
-    <pre
-      id="output"
-      style="background: #f0f0f0; padding: 10px; margin-top: 20px"
-    ></pre>
+      <pre id="output"></pre>
+    </div>
 
     <script>
       const filePath = "my/userInput.txt";
@@ -35,18 +106,12 @@
       document.getElementById("saveBtn").addEventListener("click", async () => {
         try {
           const text = userInput.value;
-
-          // Optional: encode text to base64 (depends on your API requirements)
-          // For example, if ghStorage expects base64 encoded strings, encode:
-          // const encoded = btoa(unescape(encodeURIComponent(text)));
-          // Here I just send plain text, assuming ghStorage accepts it.
-
           const success = await window.ghStorage.set(filePath, text);
           output.textContent = success
-            ? "File saved successfully."
-            : "Failed to save file.";
+            ? "✅ File saved successfully."
+            : "❌ Failed to save file.";
         } catch (e) {
-          output.textContent = "Error saving file: " + e.message;
+          output.textContent = "⚠️ Error saving file: " + e.message;
         }
       });
 
@@ -54,14 +119,14 @@
         try {
           const content = await window.ghStorage.get(filePath);
           if (content === null) {
-            output.textContent = "File not found.";
+            output.textContent = "📄 File not found.";
             userInput.value = "";
           } else {
-            output.textContent = "File loaded.";
+            output.textContent = "✅ File loaded.";
             userInput.value = content;
           }
         } catch (e) {
-          output.textContent = "Error loading file: " + e.message;
+          output.textContent = "⚠️ Error loading file: " + e.message;
         }
       });
 
@@ -71,11 +136,11 @@
           try {
             const success = await window.ghStorage.delete(filePath);
             output.textContent = success
-              ? "File deleted successfully."
-              : "Failed to delete file.";
+              ? "🗑️ File deleted successfully."
+              : "❌ Failed to delete file.";
             if (success) userInput.value = "";
           } catch (e) {
-            output.textContent = "Error deleting file: " + e.message;
+            output.textContent = "⚠️ Error deleting file: " + e.message;
           }
         });
     </script>
