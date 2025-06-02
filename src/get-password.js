@@ -75,7 +75,6 @@ export default function getPassword() {
         // First time: store hash
         localStorage.setItem("encryption-password-hash", hashed);
         document.body.innerHTML = "<h1 class='status success'>Password stored</h1>";
-        parent.postMessage("ok", "*");
         resolve(password);
       } else {
         // Compare hash
