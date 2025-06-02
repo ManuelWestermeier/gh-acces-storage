@@ -81,13 +81,11 @@ export default function getPassword() {
         // Compare hash
         if (storedHash === hashed) {
           document.body.innerHTML = "<h1 class='status success'>Password verified</h1>";
-          parent.postMessage("ok", "*");
           resolve(password);
         } else {
           errorMsg.textContent = "Password incorrect, please try again.";
           input.value = "";
           input.focus();
-          parent.postMessage("false", "*");
         }
       }
     });
